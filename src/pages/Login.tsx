@@ -1,0 +1,48 @@
+import { FormEvent } from 'react'
+import { Link } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+
+const LoginPage = () => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-16">
+      <Card className="w-full max-w-md border-border/80 bg-card/80 backdrop-blur">
+        <CardHeader>
+          <CardTitle>Войти</CardTitle>
+          <CardDescription>Добро пожаловать обратно! Продолжим ваш прогресс.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" name="email" type="email" placeholder="you@example.com" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Пароль</Label>
+              <Input id="password" name="password" type="password" placeholder="••••••••" required />
+            </div>
+            <Button className="w-full" type="submit">
+              Войти
+            </Button>
+            <div className="flex items-center justify-between text-sm">
+              <Link to="/reset-password" className="text-primary hover:underline">
+                Забыли пароль?
+              </Link>
+              <Link to="/register" className="text-muted-foreground hover:text-foreground">
+                Создать аккаунт
+              </Link>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+export default LoginPage
