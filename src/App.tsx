@@ -18,10 +18,4 @@ function App() {
   )
 }
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  )
-}
 export default App
