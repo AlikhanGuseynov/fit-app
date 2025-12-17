@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom'
-import { Activity, LayoutDashboard, LineChart } from 'lucide-react'
+import { Activity, Dumbbell, LayoutDashboard, LineChart, ListChecks } from 'lucide-react'
 import BottomNav from './BottomNav'
 import Header from './Header'
 import Sidebar from './Sidebar'
@@ -9,6 +9,8 @@ const navItems: NavigationItem[] = [
   { label: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
   { label: 'Progress', href: '/app/progress', icon: LineChart },
   { label: 'Activity', href: '/app/activity', icon: Activity },
+  { label: 'План', href: '/app/workouts/plan', icon: ListChecks },
+  { label: 'Упражнения', href: '/app/exercises', icon: Dumbbell },
 ]
 
 const AppLayout = () => {
