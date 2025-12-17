@@ -1,5 +1,16 @@
 import { Outlet } from 'react-router-dom'
-import { Activity, LayoutDashboard, LineChart } from 'lucide-react'
+import {
+  Activity,
+  CalendarDays,
+  Droplets,
+  Dumbbell,
+  Flame,
+  Bell,
+  Footprints,
+  LayoutDashboard,
+  LineChart,
+  ListChecks,
+} from 'lucide-react'
 import BottomNav from './BottomNav'
 import Header from './Header'
 import Sidebar from './Sidebar'
@@ -8,7 +19,14 @@ import type { NavigationItem } from './types'
 const navItems: NavigationItem[] = [
   { label: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
   { label: 'Progress', href: '/app/progress', icon: LineChart },
+  { label: 'Календарь', href: '/app/calendar', icon: CalendarDays },
+  { label: 'Вода', href: '/app/water', icon: Droplets },
+  { label: 'Шаги', href: '/app/steps', icon: Footprints },
+  { label: 'Калории', href: '/app/calories', icon: Flame },
+  { label: 'Уведомления', href: '/app/notifications', icon: Bell },
   { label: 'Activity', href: '/app/activity', icon: Activity },
+  { label: 'План', href: '/app/workouts/plan', icon: ListChecks },
+  { label: 'Упражнения', href: '/app/exercises', icon: Dumbbell },
 ]
 
 const AppLayout = () => {
