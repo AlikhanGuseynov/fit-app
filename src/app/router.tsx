@@ -4,6 +4,7 @@ import AppLayout from '@/components/layout/AppLayout'
 import ActivityPage from '@/pages/Activity'
 import ExerciseDetailsPage from '@/pages/ExerciseDetails'
 import ExercisesPage from '@/pages/Exercises'
+import CalendarPage from '@/pages/Calendar'
 import DashboardPage from '@/pages/Dashboard'
 import LandingPage from '@/pages/Landing'
 import LoginPage from '@/pages/Login'
@@ -14,6 +15,10 @@ import ResetPasswordPage from '@/pages/ResetPassword'
 import WorkoutDetailsPage from '@/pages/WorkoutDetails'
 import WorkoutSessionPage from '@/pages/WorkoutSession'
 import WorkoutsPlanPage from '@/pages/WorkoutsPlan'
+import WaterPage from '@/pages/Water'
+import StepsPage from '@/pages/Steps'
+import CaloriesPage from '@/pages/Calories'
+import NotificationsPage from '@/pages/Notifications'
 import OnboardingRoute from './OnboardingRoute'
 
 export const router = createBrowserRouter([
@@ -58,6 +63,10 @@ export const router = createBrowserRouter([
         element: <DashboardPage />,
       },
       {
+        path: 'calendar',
+        element: <CalendarPage />,
+      },
+      {
         path: 'workouts/plan',
         element: <WorkoutsPlanPage />,
       },
@@ -80,6 +89,22 @@ export const router = createBrowserRouter([
       {
         path: 'progress',
         element: <ProgressPage />,
+      },
+      {
+        path: 'water',
+        element: <WaterPage />,
+      },
+      {
+        path: 'steps',
+        element: <StepsPage />,
+      },
+      {
+        path: 'calories',
+        element: <CaloriesPage />,
+      },
+      {
+        path: 'notifications',
+        element: <NotificationsPage />,
       },
       {
         path: 'activity',

@@ -23,6 +23,7 @@ export interface UserProfile {
   bmr?: number | null
   tdee?: number | null
   target_calories?: number | null
+  last_plan_id?: string | null
   created_at?: string
   updated_at?: string
 }

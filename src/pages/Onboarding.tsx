@@ -9,12 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { getSupabaseClient } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
-import type {
-  ActivityLevel,
-  Gender,
-  UserGoal,
-  UserProfile,
-} from '@/types/profile'
+import type { UserProfile } from '@/types/profile'
+import { calculateBmr, calculateTargetCalories, calculateTdee } from '@/utils/nutrition'
 
 const onboardingSchema = z.object({
   full_name: z.string().min(2, 'Введите имя'),
@@ -31,12 +27,6 @@ const onboardingSchema = z.object({
 
 type OnboardingValues = z.infer<typeof onboardingSchema>
 
-const activityMultipliers: Record<ActivityLevel, number> = {
-  low: 1.2,
-  moderate: 1.55,
-  high: 1.725,
-}
-
 const equipmentOptions = [
   { value: 'bodyweight', label: 'Собственный вес' },
   { value: 'dumbbells', label: 'Гантели' },
@@ -45,25 +35,6 @@ const equipmentOptions = [
   { value: 'resistance_bands', label: 'Эластичные ленты' },
   { value: 'machines', label: 'Тренажёры' },
 ]
-
-const calculateBmr = (gender: Gender, weight: number, height: number, age: number) => {
-  if (gender === 'male') {
-    return 88.36 + 13.4 * weight + 4.8 * height - 5.7 * age
-  }
-  if (gender === 'female') {
-    return 447.6 + 9.2 * weight + 3.1 * height - 4.3 * age
-  }
-  // fallback formula
-  return 370 + 21.6 * weight
-}
-
-const calculateTdee = (bmr: number, activity: ActivityLevel) => Math.round(bmr * activityMultipliers[activity])
-
-const calculateTargetCalories = (tdee: number, goal: UserGoal) => {
-  if (goal === 'lose_weight') return Math.max(1200, Math.round(tdee - 500))
-  if (goal === 'gain_muscle') return Math.round(tdee + 300)
-  return Math.round(tdee)
-}
 
 const steps = [
   { id: 1, title: 'Персональные данные', description: 'Помогают рассчитать базовые метрики' },
@@ -161,7 +132,18 @@ const OnboardingPage = () => {
         return
       }
 
-      setProfile(data as UserProfile)
+      const { data: planResponse, error: planError } = await supabase.functions.invoke<{
+        plan_id: string
+      }>('generate-workout-plan', {
+        body: { profile: payload },
+      })
+
+      if (planError || !planResponse?.plan_id) {
+        setErrorMessage(planError?.message ?? 'Не удалось сгенерировать план. Попробуйте снова позже.')
+        return
+      }
+
+      setProfile({ ...(data as UserProfile), last_plan_id: planResponse?.plan_id })
       navigate('/app/dashboard')
     } catch (error) {
       console.error('[FitFlow] Failed to complete onboarding', error)
