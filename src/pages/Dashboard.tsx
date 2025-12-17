@@ -254,6 +254,126 @@ const DashboardPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="border-border/70 bg-card/80 backdrop-blur">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Сегодняшняя тренировка</CardTitle>
+              <CardDescription>Следующий шаг вашего плана</CardDescription>
+            </div>
+            <Button asChild size="sm">
+              <Link to="/app/workouts/plan">К плану</Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {todayLoading && <p className="text-sm text-muted-foreground">Загружаем...</p>}
+            {todayError && (
+              <p className="text-sm text-destructive">
+                {todayError.message || 'Не удалось получить тренировку.'}
+              </p>
+            )}
+            {!todayLoading && !todayError && todayWorkout ? (
+              <div className="rounded-lg border border-border/70 bg-background/60 p-4">
+                <p className="text-lg font-semibold text-foreground">{todayWorkout.name}</p>
+                <p className="text-sm text-muted-foreground">{todayWorkout.focus ?? 'Без фокуса'}</p>
+                <div className="mt-3 flex gap-2">
+                  <Button asChild>
+                    <Link to={`/app/workouts/${todayWorkout.id}`}>Детали</Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link to={`/app/workouts/${todayWorkout.id}/session`}>Начать</Link>
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+            {!todayLoading && !todayError && !todayWorkout && (
+              <p className="text-sm text-muted-foreground">Пока нет тренировки на сегодня.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/70 bg-card/80 backdrop-blur">
+          <CardHeader>
+            <CardTitle>Быстрые действия</CardTitle>
+            <CardDescription>Переходите к часто используемым разделам.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2 sm:grid-cols-2">
+            {quickActions.map((action) => (
+              <Button key={action.href} asChild variant="secondary" className="justify-start">
+                <Link to={action.href}>{action.label}</Link>
+              </Button>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="border-border/70 bg-card/80 backdrop-blur">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Результаты недели</CardTitle>
+              <CardDescription>Выполненные и запланированные сессии за 7 дней.</CardDescription>
+            </div>
+            <CheckCircle className="h-5 w-5 text-primary" />
+          </CardHeader>
+          <CardContent>
+            {weeklyLoading && <p className="text-sm text-muted-foreground">Считаем активность...</p>}
+            {weeklyError && (
+              <p className="text-sm text-destructive">
+                {weeklyError.message || 'Не удалось получить статистику.'}
+              </p>
+            )}
+            {!weeklyLoading && !weeklyError && weekly && (
+              <div className="flex items-baseline gap-2">
+                <p className="text-3xl font-bold">{weekly.completed}</p>
+                <p className="text-sm text-muted-foreground">из {weekly.total} завершено</p>
+              </div>
+            )}
+            {!weeklyLoading && !weeklyError && !weekly && (
+              <p className="text-sm text-muted-foreground">Нет данных за эту неделю.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/70 bg-card/80 backdrop-blur">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Ближайшие тренировки</CardTitle>
+              <CardDescription>Подготовьтесь заранее и спланируйте день.</CardDescription>
+            </div>
+            <Clock className="h-5 w-5 text-primary" />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {upcomingLoading && <p className="text-sm text-muted-foreground">Загружаем список...</p>}
+            {upcomingError && (
+              <p className="text-sm text-destructive">
+                {upcomingError.message || 'Не удалось получить список тренировок.'}
+              </p>
+            )}
+            {!upcomingLoading && !upcomingError && upcoming?.length ? (
+              upcoming.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between rounded-lg border border-border/60 bg-background/60 p-3"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      День {item.day_index ?? '—'} · {item.focus ?? 'Без фокуса'}
+                    </p>
+                  </div>
+                  <Button asChild size="sm" variant="outline">
+                    <Link to={`/app/workouts/${item.id}`}>Открыть</Link>
+                  </Button>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">Пока нет запланированных тренировок.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
