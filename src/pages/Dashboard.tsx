@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { getSupabaseClient } from '@/lib/supabase'
+import { workoutsClient } from '@/lib/localDatabase'
 import { useAuthStore } from '@/store/authStore'
 
 interface WeeklySummary {
@@ -14,45 +14,20 @@ interface WeeklySummary {
 }
 
 const fetchTodayWorkout = async (userId: string) => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('workouts')
-    .select('id,name,focus')
-    .eq('user_id', userId)
-    .order('day_index')
-    .limit(1)
-    .maybeSingle()
-
-  if (error) throw error
-  return data
+  const workouts = await workoutsClient.getUpcomingWorkouts(userId)
+  return workouts[0] ?? null
 }
 
 const fetchWeeklySummary = async (userId: string): Promise<WeeklySummary> => {
-  const supabase = getSupabaseClient()
   const start = new Date()
   start.setDate(start.getDate() - 7)
-  const { data, error } = await supabase
-    .from('workout_sessions')
-    .select('id,completed')
-    .eq('user_id', userId)
-    .gte('start_time', start.toISOString())
-
-  if (error) throw error
-  const completed = data.filter((item) => item.completed).length
-  return { completed, total: data.length }
+  const sessions = await workoutsClient.getSessionsBetween(userId, start, new Date())
+  const completed = sessions.filter((item) => item.completed).length
+  return { completed, total: sessions.length }
 }
 
-const fetchUpcomingWorkouts = async (userId: string) => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('workouts')
-    .select('id,name,focus,day_index')
-    .eq('user_id', userId)
-    .order('day_index')
-    .limit(4)
-  if (error) throw error
-  return data
-}
+const fetchUpcomingWorkouts = async (userId: string) =>
+  workoutsClient.getUpcomingWorkouts(userId)
 
 const DashboardPage = () => {
   const { user } = useAuthStore()

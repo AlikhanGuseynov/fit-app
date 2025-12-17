@@ -4,34 +4,16 @@ import { Droplets, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { getSupabaseClient } from '@/lib/supabase'
+import { activityClient } from '@/lib/localDatabase'
 import { useAuthStore } from '@/store/authStore'
 import type { WaterTracking } from '@/types/tracking'
 
 const fetchWaterForDate = async (userId: string, date: string): Promise<WaterTracking | null> => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('water_tracking')
-    .select('id,user_id,date,total_ml,goal_ml,updated_at')
-    .eq('user_id', userId)
-    .eq('date', date)
-    .maybeSingle()
-
-  if (error) throw error
-  return data as WaterTracking | null
+  return activityClient.getWaterForDate(userId, date)
 }
 
 const fetchRecentWater = async (userId: string): Promise<WaterTracking[]> => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('water_tracking')
-    .select('id,user_id,date,total_ml,goal_ml,updated_at')
-    .eq('user_id', userId)
-    .order('date', { ascending: false })
-    .limit(7)
-
-  if (error) throw error
-  return data as WaterTracking[]
+  return activityClient.getRecentWater(userId)
 }
 
 const WaterPage = () => {
@@ -61,16 +43,14 @@ const WaterPage = () => {
   const addWater = useMutation({
     mutationFn: async (value: number) => {
       if (!user) return
-      const supabase = getSupabaseClient()
       const currentTotal = daily?.total_ml ?? 0
       const goal = goalOverride ?? daily?.goal_ml ?? 2000
-      const { error: upsertError } = await supabase.from('water_tracking').upsert({
+      await activityClient.upsertWater({
         user_id: user.id,
         date: today,
         total_ml: currentTotal + value,
         goal_ml: goal,
       })
-      if (upsertError) throw upsertError
     },
     onSuccess: async () => {
       setErrorMessage(null)
@@ -85,15 +65,13 @@ const WaterPage = () => {
   const updateGoal = useMutation({
     mutationFn: async () => {
       if (!user) return
-      const supabase = getSupabaseClient()
       const goal = goalOverride ?? daily?.goal_ml ?? 2000
-      const { error: upsertError } = await supabase.from('water_tracking').upsert({
+      await activityClient.upsertWater({
         user_id: user.id,
         date: today,
         total_ml: daily?.total_ml ?? 0,
         goal_ml: goal,
       })
-      if (upsertError) throw upsertError
     },
     onSuccess: async () => {
       setErrorMessage(null)

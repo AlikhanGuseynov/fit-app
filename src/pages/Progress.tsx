@@ -5,27 +5,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { getSupabaseClient } from '@/lib/supabase'
+import { progressClient } from '@/lib/localDatabase'
 import { useAuthStore } from '@/store/authStore'
-
-interface WeightEntry {
-  id: string
-  user_id: string
-  recorded_at: string
-  weight_kg: number
-  note?: string | null
-}
+import type { WeightEntry } from '@/lib/localDatabase'
 
 const fetchWeightHistory = async (userId: string): Promise<WeightEntry[]> => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('weight_history')
-    .select('id,user_id,recorded_at,weight_kg,note')
-    .eq('user_id', userId)
-    .order('recorded_at', { ascending: true })
-
-  if (error) throw error
-  return data as WeightEntry[]
+  return progressClient.getWeightHistory(userId)
 }
 
 const ProgressPage = () => {
@@ -45,14 +30,12 @@ const ProgressPage = () => {
   const addWeight = useMutation({
     mutationFn: async () => {
       if (!user) return
-      const supabase = getSupabaseClient()
-      const { error: insertError } = await supabase.from('weight_history').upsert({
+      await progressClient.upsertWeightEntry({
         user_id: user.id,
         recorded_at: date,
         weight_kg: Number(weight),
         note: note || null,
       })
-      if (insertError) throw insertError
     },
     onSuccess: async () => {
       setWeight('')

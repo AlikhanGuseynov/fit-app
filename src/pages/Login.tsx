@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { getSupabaseClient } from '@/lib/supabase'
+import { authClient } from '@/lib/localDatabase'
 
 const loginSchema = z.object({
   email: z.string().email('Введите корректный email'),
@@ -34,21 +34,12 @@ const LoginPage = () => {
   const onSubmit = async (values: LoginFormValues) => {
     setErrorMessage(null)
     try {
-      const supabase = getSupabaseClient()
-      const { error } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
-      })
-
-      if (error) {
-        setErrorMessage(error.message)
-        return
-      }
+      await authClient.signIn(values.email, values.password)
 
       navigate('/app/dashboard')
     } catch (error) {
       console.error('[FitFlow] Login failed', error)
-      setErrorMessage('Не удалось подключиться к Supabase. Проверьте настройки окружения.')
+      setErrorMessage(error instanceof Error ? error.message : 'Не удалось выполнить вход.')
     }
   }
 

@@ -1,26 +1,6 @@
 import { useEffect } from 'react'
-import { getSupabaseClient } from '@/lib/supabase'
+import { authClient, profileClient } from '@/lib/localDatabase'
 import { useAuthStore } from '@/store/authStore'
-import type { UserProfile } from '@/types/profile'
-
-const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('users_profiles')
-    .select('*')
-    .eq('user_id', userId)
-    .single()
-
-  if (error) {
-    // PGRST116 = row not found
-    if (error.code !== 'PGRST116') {
-      console.error('[FitFlow] Failed to fetch user profile', error)
-    }
-    return null
-  }
-
-  return data as UserProfile
-}
 
 export const useAuth = () => {
   const { setUser, setProfile, setLoading } = useAuthStore()
@@ -32,29 +12,13 @@ export const useAuth = () => {
     const initialize = async () => {
       setLoading(true)
 
-      let supabaseClient
-      try {
-        supabaseClient = getSupabaseClient()
-      } catch (error) {
-        console.warn('[FitFlow] Supabase client is not available', error)
-        setLoading(false)
-        return
-      }
-
-      const { data, error } = await supabaseClient.auth.getSession()
+      const { user } = await authClient.getSession()
       if (!isActive) return
 
-      if (error) {
-        console.error('[FitFlow] Failed to get session', error)
-        setLoading(false)
-        return
-      }
+      setUser(user)
 
-      const sessionUser = data.session?.user ?? null
-      setUser(sessionUser)
-
-      if (sessionUser) {
-        const profile = await fetchProfile(sessionUser.id)
+      if (user) {
+        const profile = await profileClient.getProfile(user.id)
         if (isActive) {
           setProfile(profile)
         }
@@ -64,26 +28,21 @@ export const useAuth = () => {
 
       setLoading(false)
 
-      const { data: subscription } = supabaseClient.auth.onAuthStateChange(
-        async (_event, session) => {
-          const nextUser = session?.user ?? null
-          setUser(nextUser)
+      const unsubscribeAuth = authClient.onAuthStateChange(async (nextUser) => {
+        setUser(nextUser)
 
-          if (nextUser) {
-            const profile = await fetchProfile(nextUser.id)
-            if (isActive) {
-              setProfile(profile)
-            }
-          } else {
-            setProfile(null)
+        if (nextUser) {
+          const profile = await profileClient.getProfile(nextUser.id)
+          if (isActive) {
+            setProfile(profile)
           }
-          setLoading(false)
-        },
-      )
+        } else {
+          setProfile(null)
+        }
+        setLoading(false)
+      })
 
-      unsubscribe = () => {
-        subscription?.subscription.unsubscribe()
-      }
+      unsubscribe = unsubscribeAuth
     }
 
     void initialize()

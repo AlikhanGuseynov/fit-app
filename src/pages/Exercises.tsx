@@ -5,16 +5,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { getSupabaseClient } from '@/lib/supabase'
+import { exercisesClient } from '@/lib/localDatabase'
 import type { Exercise } from '@/types/exercise'
 
 const fetchExercises = async (): Promise<Exercise[]> => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase.from('exercises').select('*').order('name')
-  if (error) {
-    throw error
-  }
-  return data as Exercise[]
+  return exercisesClient.getExercises()
 }
 
 const ExercisesPage = () => {
@@ -133,7 +128,7 @@ const ExercisesPage = () => {
         <Card className="border-border/70 bg-card/80 backdrop-blur">
           <CardHeader>
             <CardTitle>Загружаем упражнения...</CardTitle>
-            <CardDescription>Получаем данные из Supabase.</CardDescription>
+            <CardDescription>Получаем данные из локального хранилища.</CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -143,7 +138,7 @@ const ExercisesPage = () => {
           <CardHeader>
             <CardTitle className="text-destructive">Не удалось загрузить упражнения</CardTitle>
             <CardDescription className="text-destructive">
-              {error.message || 'Проверьте соединение с Supabase.'}
+              {error.message || 'Проверьте локальные данные.'}
             </CardDescription>
           </CardHeader>
         </Card>

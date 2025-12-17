@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { getSupabaseClient } from '@/lib/supabase'
+import { profileClient, workoutsClient } from '@/lib/localDatabase'
 import { useAuthStore } from '@/store/authStore'
 import type { UserProfile } from '@/types/profile'
 import { calculateBmr, calculateTargetCalories, calculateTdee } from '@/utils/nutrition'
@@ -105,7 +105,6 @@ const OnboardingPage = () => {
     setErrorMessage(null)
 
     try {
-      const supabase = getSupabaseClient()
       const bmr = calculateBmr(values.gender, values.weight_kg, values.height_cm, values.age)
       const tdee = calculateTdee(bmr, values.activity_level)
       const targetCalories = calculateTargetCalories(tdee, values.goal)
@@ -121,33 +120,19 @@ const OnboardingPage = () => {
         onboarding_completed: true,
       }
 
-      const { data, error } = await supabase
-        .from('users_profiles')
-        .upsert(payload, { onConflict: 'user_id' })
-        .select('*')
-        .single()
+      const savedProfile = await profileClient.upsertProfile(payload)
+      const planId = await workoutsClient.ensurePlanForUser(
+        user.id,
+        values.goal,
+        values.activity_level,
+        values.fitness_level,
+      )
 
-      if (error) {
-        setErrorMessage(error.message)
-        return
-      }
-
-      const { data: planResponse, error: planError } = await supabase.functions.invoke<{
-        plan_id: string
-      }>('generate-workout-plan', {
-        body: { profile: payload },
-      })
-
-      if (planError || !planResponse?.plan_id) {
-        setErrorMessage(planError?.message ?? 'Не удалось сгенерировать план. Попробуйте снова позже.')
-        return
-      }
-
-      setProfile({ ...(data as UserProfile), last_plan_id: planResponse?.plan_id })
+      setProfile({ ...savedProfile, last_plan_id: planId })
       navigate('/app/dashboard')
     } catch (error) {
       console.error('[FitFlow] Failed to complete onboarding', error)
-      setErrorMessage('Не удалось сохранить профиль. Проверьте настройки Supabase.')
+      setErrorMessage(error instanceof Error ? error.message : 'Не удалось сохранить профиль.')
     }
   }
 

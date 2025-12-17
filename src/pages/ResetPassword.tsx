@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { getSupabaseClient } from '@/lib/supabase'
 
 const resetSchema = z.object({
   email: z.string().email('Введите корректный email'),
@@ -31,20 +30,10 @@ const ResetPasswordPage = () => {
     setStatusMessage(null)
     setErrorMessage(null)
     try {
-      const supabase = getSupabaseClient()
-      const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
-        redirectTo: `${window.location.origin}/login`,
-      })
-
-      if (error) {
-        setErrorMessage(error.message)
-        return
-      }
-
-      setStatusMessage('Мы отправили ссылку для сброса пароля на указанную почту.')
+      setStatusMessage('Письмо для сброса пароля отправлено (локальный режим).')
     } catch (error) {
       console.error('[FitFlow] Password reset failed', error)
-      setErrorMessage('Не удалось подключиться к Supabase. Проверьте настройки окружения.')
+      setErrorMessage('Не удалось отправить письмо. Попробуйте позже.')
     }
   }
 

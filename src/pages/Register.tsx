@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { getSupabaseClient } from '@/lib/supabase'
+import { authClient } from '@/lib/localDatabase'
 
 const registerSchema = z
   .object({
@@ -45,26 +45,13 @@ const RegisterPage = () => {
     setSuccessMessage(null)
 
     try {
-      const supabase = getSupabaseClient()
-      const { data, error } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-      })
-
-      if (error) {
-        setErrorMessage(error.message)
-        return
-      }
-
-      if (!data.session) {
-        setSuccessMessage('Проверьте почту и подтвердите аккаунт, затем войдите в систему.')
-        return
-      }
+      await authClient.signUp(values.email, values.password)
+      setSuccessMessage('Аккаунт создан! Можно продолжить онбординг.')
 
       navigate('/onboarding')
     } catch (error) {
       console.error('[FitFlow] Registration failed', error)
-      setErrorMessage('Не удалось подключиться к Supabase. Проверьте настройки окружения.')
+      setErrorMessage(error instanceof Error ? error.message : 'Не удалось создать аккаунт.')
     }
   }
 

@@ -3,26 +3,12 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { getSupabaseClient } from '@/lib/supabase'
+import { workoutsClient } from '@/lib/localDatabase'
 import { useAuthStore } from '@/store/authStore'
 import type { Workout, WorkoutExercise } from '@/types/workout'
 
 const fetchWorkout = async (userId: string, workoutId: string): Promise<Workout | null> => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('workouts')
-    .select(
-      'id,name,focus,day_index,workout_exercises(id,exercise_id,sets,reps,rest_seconds,notes,exercises(id,name))',
-    )
-    .eq('user_id', userId)
-    .eq('id', workoutId)
-    .maybeSingle()
-
-  if (error) {
-    throw error
-  }
-
-  return data as Workout | null
+  return workoutsClient.getWorkout(userId, workoutId)
 }
 
 type SetsState = Record<string, boolean[]>
@@ -59,27 +45,12 @@ const WorkoutSessionPage = () => {
     if (!user || !id) return
     setErrorMessage(null)
     try {
-      const supabase = getSupabaseClient()
-      const { data: sessionData, error: sessionError } = await supabase
-        .from('workout_sessions')
-        .insert({
-          user_id: user.id,
-          workout_id: id,
-          start_time: new Date().toISOString(),
-        })
-        .select('id')
-        .single()
-
-      if (sessionError) {
-        setErrorMessage(sessionError.message)
-        return
-      }
-
-      setSessionId(sessionData.id)
+      const session = await workoutsClient.startSession(user.id, id)
+      setSessionId(session.id)
       setStatusMessage('Сессия началась. Отмечайте подходы по мере выполнения.')
     } catch (startError) {
       console.error('[FitFlow] Failed to start session', startError)
-      setErrorMessage('Не удалось создать сессию. Проверьте Supabase настройки.')
+      setErrorMessage('Не удалось создать сессию. Проверьте локальное хранилище.')
     }
   }
 
@@ -96,23 +67,18 @@ const WorkoutSessionPage = () => {
     })
 
     try {
-      const supabase = getSupabaseClient()
       const targetExercise = data.workout_exercises?.find((item) => item.id === exerciseId)
-      const { error: upsertError } = await supabase.from('session_exercises').upsert({
-        user_id: user.id,
+      await workoutsClient.recordSessionExercise({
+        id: `${sessionId}-${exerciseId}-${index + 1}`,
         session_id: sessionId,
         exercise_id: targetExercise?.exercise_id ?? exerciseId,
         set_number: index + 1,
         reps_completed: targetExercise?.reps ?? null,
         completed: setsState[exerciseId]?.[index] ? false : true,
       })
-
-      if (upsertError) {
-        setErrorMessage(upsertError.message)
-      }
     } catch (upsertCatch) {
       console.error('[FitFlow] Failed to track set', upsertCatch)
-      setErrorMessage('Не удалось сохранить подход. Проверьте соединение с Supabase.')
+      setErrorMessage('Не удалось сохранить подход. Проверьте локальное хранилище.')
     }
   }
 
@@ -120,24 +86,11 @@ const WorkoutSessionPage = () => {
     if (!sessionId || !user) return
     setErrorMessage(null)
     try {
-      const supabase = getSupabaseClient()
-      const { error: updateError } = await supabase
-        .from('workout_sessions')
-        .update({
-          completed: true,
-          end_time: new Date().toISOString(),
-        })
-        .eq('id', sessionId)
-
-      if (updateError) {
-        setErrorMessage(updateError.message)
-        return
-      }
-
+      await workoutsClient.finishSession(sessionId)
       setStatusMessage('Сессия завершена! Отличная работа.')
     } catch (finishError) {
       console.error('[FitFlow] Failed to finish session', finishError)
-      setErrorMessage('Не удалось завершить сессию. Проверьте Supabase настройки.')
+      setErrorMessage('Не удалось завершить сессию. Попробуйте ещё раз.')
     }
   }
 
@@ -177,7 +130,7 @@ const WorkoutSessionPage = () => {
         <Card className="border-border/70 bg-card/80 backdrop-blur">
           <CardHeader>
             <CardTitle>Загружаем упражнения...</CardTitle>
-            <CardDescription>Получаем тренировку из Supabase.</CardDescription>
+            <CardDescription>Получаем тренировку из локального хранилища.</CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -187,7 +140,7 @@ const WorkoutSessionPage = () => {
           <CardHeader>
             <CardTitle className="text-destructive">Не удалось загрузить тренировку</CardTitle>
             <CardDescription className="text-destructive">
-              {error.message || 'Проверьте соединение с Supabase.'}
+              {error.message || 'Проверьте локальные данные.'}
             </CardDescription>
           </CardHeader>
         </Card>

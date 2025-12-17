@@ -4,34 +4,16 @@ import { Footprints, MapPin, Navigation } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { getSupabaseClient } from '@/lib/supabase'
+import { activityClient } from '@/lib/localDatabase'
 import { useAuthStore } from '@/store/authStore'
 import type { StepsTracking } from '@/types/tracking'
 
 const fetchStepsForDate = async (userId: string, date: string): Promise<StepsTracking | null> => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('steps_tracking')
-    .select('id,user_id,date,steps,distance_km,calories_burned,updated_at')
-    .eq('user_id', userId)
-    .eq('date', date)
-    .maybeSingle()
-
-  if (error) throw error
-  return data as StepsTracking | null
+  return activityClient.getStepsForDate(userId, date)
 }
 
 const fetchRecentSteps = async (userId: string): Promise<StepsTracking[]> => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('steps_tracking')
-    .select('id,user_id,date,steps,distance_km,calories_burned,updated_at')
-    .eq('user_id', userId)
-    .order('date', { ascending: false })
-    .limit(7)
-
-  if (error) throw error
-  return data as StepsTracking[]
+  return activityClient.getRecentSteps(userId)
 }
 
 const StepsPage = () => {
@@ -63,15 +45,13 @@ const StepsPage = () => {
       const steps = Number(stepsValue) || 0
       const distance = Number((steps * 0.0008).toFixed(2))
       const calories = Number((distance * 55).toFixed(2))
-      const supabase = getSupabaseClient()
-      const { error: upsertError } = await supabase.from('steps_tracking').upsert({
+      await activityClient.upsertSteps({
         user_id: user.id,
         date: today,
         steps,
         distance_km: distance,
         calories_burned: calories,
       })
-      if (upsertError) throw upsertError
     },
     onSuccess: async () => {
       setErrorMessage(null)

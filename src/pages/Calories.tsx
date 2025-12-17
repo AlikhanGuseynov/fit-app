@@ -4,34 +4,16 @@ import { Flame, PlusCircle, Salad } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { getSupabaseClient } from '@/lib/supabase'
+import { nutritionClient } from '@/lib/localDatabase'
 import { useAuthStore } from '@/store/authStore'
-import type { CaloriesBreakdown, CaloriesTracking, MealEntry } from '@/types/tracking'
+import type { CaloriesTracking, MealEntry } from '@/types/tracking'
 
 const fetchCaloriesForDate = async (userId: string, date: string): Promise<CaloriesTracking | null> => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('calories_tracking')
-    .select('id,user_id,date,meals,total_calories,calories_burned,updated_at')
-    .eq('user_id', userId)
-    .eq('date', date)
-    .maybeSingle()
-
-  if (error) throw error
-  return data as CaloriesTracking | null
+  return nutritionClient.getCaloriesForDate(userId, date)
 }
 
 const fetchRecentCalories = async (userId: string): Promise<CaloriesTracking[]> => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('calories_tracking')
-    .select('id,user_id,date,total_calories,calories_burned')
-    .eq('user_id', userId)
-    .order('date', { ascending: false })
-    .limit(7)
-
-  if (error) throw error
-  return data as CaloriesTracking[]
+  return nutritionClient.getRecentCalories(userId)
 }
 
 const CaloriesPage = () => {
@@ -64,23 +46,14 @@ const CaloriesPage = () => {
   const caloriesBurned = caloriesBurnedOverride ?? daily?.calories_burned ?? 0
 
   const calculateTotals = async (meals: MealEntry[], burned: number) => {
-    const supabase = getSupabaseClient()
-    const { data, error } = await supabase.functions.invoke<CaloriesBreakdown>('calculate-calories', {
-      body: { meals, calories_burned: burned },
-    })
-
-    if (error || !data) {
-      const fallbackTotal = meals.reduce(
-        (sum, meal) => sum + meal.items.reduce((itemSum, item) => itemSum + item.calories, 0),
-        0,
-      )
-      return { meals, totalCalories: fallbackTotal, burned }
-    }
-
+    const fallbackTotal = meals.reduce(
+      (sum, meal) => sum + meal.items.reduce((itemSum, item) => itemSum + item.calories, 0),
+      0,
+    )
     return {
-      meals: data.meals.map(({ type, time, items }) => ({ type, time, items })),
-      totalCalories: data.total_calories,
-      burned: data.calories_burned,
+      meals,
+      totalCalories: fallbackTotal,
+      burned,
     }
   }
 
@@ -98,15 +71,13 @@ const CaloriesPage = () => {
       }
       const meals = [...(daily?.meals ?? []), newMeal]
       const calculation = await calculateTotals(meals, caloriesBurned)
-      const supabase = getSupabaseClient()
-      const { error: upsertError } = await supabase.from('calories_tracking').upsert({
+      await nutritionClient.upsertCalories({
         user_id: user.id,
         date: today,
         meals: calculation.meals,
         total_calories: calculation.totalCalories,
         calories_burned: calculation.burned,
       })
-      if (upsertError) throw upsertError
     },
     onSuccess: async () => {
       setErrorMessage(null)
@@ -125,15 +96,13 @@ const CaloriesPage = () => {
       if (!user) return
       const meals = daily?.meals ?? []
       const calculation = await calculateTotals(meals, caloriesBurned)
-      const supabase = getSupabaseClient()
-      const { error: upsertError } = await supabase.from('calories_tracking').upsert({
+      await nutritionClient.upsertCalories({
         user_id: user.id,
         date: today,
         meals: calculation.meals,
         total_calories: calculation.totalCalories,
         calories_burned: calculation.burned,
       })
-      if (upsertError) throw upsertError
     },
     onSuccess: async () => {
       setErrorMessage(null)

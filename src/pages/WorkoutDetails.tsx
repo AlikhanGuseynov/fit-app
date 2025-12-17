@@ -3,26 +3,12 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { getSupabaseClient } from '@/lib/supabase'
+import { workoutsClient } from '@/lib/localDatabase'
 import { useAuthStore } from '@/store/authStore'
 import type { Workout } from '@/types/workout'
 
 const fetchWorkout = async (userId: string, workoutId: string): Promise<Workout | null> => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('workouts')
-    .select(
-      'id,name,focus,day_index,workout_exercises(id,sets,reps,rest_seconds,notes,exercises(id,name,category,difficulty,equipment,muscle_groups))',
-    )
-    .eq('user_id', userId)
-    .eq('id', workoutId)
-    .maybeSingle()
-
-  if (error) {
-    throw error
-  }
-
-  return data as Workout | null
+  return workoutsClient.getWorkout(userId, workoutId)
 }
 
 const WorkoutDetailsPage = () => {
@@ -72,7 +58,7 @@ const WorkoutDetailsPage = () => {
         <Card className="border-border/70 bg-card/80 backdrop-blur">
           <CardHeader>
             <CardTitle>Загружаем тренировку...</CardTitle>
-            <CardDescription>Получаем данные из Supabase.</CardDescription>
+            <CardDescription>Получаем данные из локального хранилища.</CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -82,7 +68,7 @@ const WorkoutDetailsPage = () => {
           <CardHeader>
             <CardTitle className="text-destructive">Не удалось загрузить тренировку</CardTitle>
             <CardDescription className="text-destructive">
-              {error.message || 'Проверьте соединение с Supabase.'}
+              {error.message || 'Проверьте локальные данные.'}
             </CardDescription>
           </CardHeader>
         </Card>
