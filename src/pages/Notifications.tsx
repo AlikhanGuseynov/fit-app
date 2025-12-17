@@ -4,7 +4,7 @@ import { Bell, Moon, Speaker } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { getSupabaseClient } from '@/lib/supabase'
+import { notificationClient } from '@/lib/localDatabase'
 import { useAuthStore } from '@/store/authStore'
 import type { NotificationSettings } from '@/types/tracking'
 
@@ -18,17 +18,7 @@ const defaultSettings: Omit<NotificationSettings, 'id' | 'user_id'> = {
 }
 
 const fetchSettings = async (userId: string): Promise<NotificationSettings | null> => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('notification_settings')
-    .select(
-      'id,user_id,push_enabled,email_enabled,reminders_enabled,quiet_hours_start,quiet_hours_end,preferred_times,updated_at',
-    )
-    .eq('user_id', userId)
-    .maybeSingle()
-
-  if (error) throw error
-  return data as NotificationSettings | null
+  return notificationClient.getSettings(userId)
 }
 
 const NotificationsPage = () => {
@@ -59,12 +49,11 @@ const NotificationsPage = () => {
   const saveSettings = useMutation({
     mutationFn: async () => {
       if (!user) return
-      const supabase = getSupabaseClient()
       const preferred = preferredTimes
         .split(',')
         .map((item) => item.trim())
         .filter(Boolean)
-      const { error: upsertError } = await supabase.from('notification_settings').upsert({
+      await notificationClient.upsertSettings({
         user_id: user.id,
         push_enabled: pushEnabled,
         email_enabled: emailEnabled,
@@ -73,7 +62,6 @@ const NotificationsPage = () => {
         quiet_hours_end: quietEnd || null,
         preferred_times: preferred,
       })
-      if (upsertError) throw upsertError
     },
     onSuccess: async () => {
       setErrorMessage(null)

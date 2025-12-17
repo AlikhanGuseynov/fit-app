@@ -14,7 +14,7 @@ const ActivityPage = () => {
           <CardDescription>Интерактивная панель для запуска и отслеживания сессий.</CardDescription>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Добавим связку с планами тренировок после интеграции Supabase.
+          Добавим дополнительные сценарии после расширения локального хранилища.
         </CardContent>
       </Card>
     </div>

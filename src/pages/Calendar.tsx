@@ -14,7 +14,7 @@ import {
 import { Calendar as CalendarIcon, CheckCircle2, Clock3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { getSupabaseClient } from '@/lib/supabase'
+import { workoutsClient } from '@/lib/localDatabase'
 import { useAuthStore } from '@/store/authStore'
 
 type Workout = {
@@ -32,29 +32,11 @@ type WorkoutSession = {
 }
 
 const fetchWorkouts = async (userId: string): Promise<Workout[]> => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('workouts')
-    .select('id,name,focus,day_index')
-    .eq('user_id', userId)
-    .order('day_index')
-
-  if (error) throw error
-  return data as Workout[]
+  return workoutsClient.getWorkouts(userId)
 }
 
 const fetchSessions = async (userId: string, start: Date, end: Date): Promise<WorkoutSession[]> => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('workout_sessions')
-    .select('id,workout_id,start_time,completed')
-    .eq('user_id', userId)
-    .gte('start_time', start.toISOString())
-    .lte('start_time', end.toISOString())
-    .order('start_time', { ascending: true })
-
-  if (error) throw error
-  return data as WorkoutSession[]
+  return workoutsClient.getSessionsBetween(userId, start, end)
 }
 
 const weekdayFromDate = (date: Date) => {

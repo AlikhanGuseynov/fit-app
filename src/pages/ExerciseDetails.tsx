@@ -3,17 +3,11 @@ import { useQuery } from '@tanstack/react-query'
 import { useParams, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { getSupabaseClient } from '@/lib/supabase'
+import { exercisesClient } from '@/lib/localDatabase'
 import type { Exercise } from '@/types/exercise'
 
 const fetchExercise = async (id: string): Promise<Exercise | null> => {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase.from('exercises').select('*').eq('id', id).single()
-  if (error) {
-    if (error.code === 'PGRST116') return null
-    throw error
-  }
-  return data as Exercise
+  return exercisesClient.getExerciseById(id)
 }
 
 const ExerciseDetailsPage = () => {
@@ -52,7 +46,7 @@ const ExerciseDetailsPage = () => {
         <Card className="border-border/70 bg-card/80 backdrop-blur">
           <CardHeader>
             <CardTitle>Загружаем упражнение...</CardTitle>
-            <CardDescription>Получаем данные из Supabase.</CardDescription>
+            <CardDescription>Получаем данные из локального хранилища.</CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -62,7 +56,7 @@ const ExerciseDetailsPage = () => {
           <CardHeader>
             <CardTitle className="text-destructive">Не удалось загрузить упражнение</CardTitle>
             <CardDescription className="text-destructive">
-              {error.message || 'Проверьте соединение с Supabase.'}
+              {error.message || 'Проверьте локальные данные.'}
             </CardDescription>
           </CardHeader>
         </Card>
